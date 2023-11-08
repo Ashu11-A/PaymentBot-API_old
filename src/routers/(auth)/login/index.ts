@@ -1,16 +1,28 @@
-import { Request, Response } from 'express'
+import { type Request, type Response, type NextFunction } from 'express'
 import bcrypt from 'bcrypt'
-import { prisma } from '../../services'
+import { prisma } from '../../../services'
 import jwt from 'jsonwebtoken'
-import userValidator from '../../validations/user.validation'
+import * as yup from 'yup'
 
 export default new class createUser {
   public notRequiresAuth = true
 
-  public async post(req: Request, res: Response){
+  public validation (req: Request, res: Response, next: NextFunction) {
     try {
-      await userValidator.login.validate(req.body)
+      const schema = yup.object({
+        email: yup.string().required().email(),
+        password: yup.string().required().min(6)
+      })
 
+      schema.validateSync(req.body)
+      next()
+    } catch (err) {
+      next(err)
+    }
+  }
+
+  public async post(req: Request, res: Response, next: NextFunction) {
+    try {
       const { email, password } = req.body
       const user = await prisma.user.findUnique({ where: { email }})
       if (!user) throw new Error('❌ E-mail ou Senha incorretos.')
@@ -21,16 +33,17 @@ export default new class createUser {
 
       const expiration = Math.floor(Date.now() / 1000) + 60 * 60
       const payload = {
-        userId: id,
-        userName: name,
-        userEmail: email,
+        id,
+        name,
+        email,
+        password: password,
         expiration
       }
       const token = jwt.sign(payload, process.env.SECRET_KEY, { algorithm: 'HS256' })
 
       return res.status(200).json(token)
-    }catch(err) {
-      return res.status(400).json(err)
+    } catch(err) {
+      next(err)
     }
   }
 }

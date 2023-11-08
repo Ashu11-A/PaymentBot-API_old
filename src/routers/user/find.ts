@@ -1,11 +1,10 @@
-import { Response } from 'express'
+import { Response, Request, NextFunction } from 'express'
 import { prisma } from '../../services'
-import { RequestWithUser } from '../../middleware'
 
 export default new class findUser {
   public requereLevel = 5
 
-  public async post(req: RequestWithUser, res: Response){
+  public async get(req: Request, res: Response, next: NextFunction){
     try {
       const { id } = req.params
 
@@ -17,9 +16,7 @@ export default new class findUser {
 
       return res.status(200).json(user)
     }catch(err) {
-      return res.status(500).json({
-        message: err.message
-      })
+      next(err)
     }
   }
 }

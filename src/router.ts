@@ -23,16 +23,17 @@ async function scan (folderPath: string, router: Router, prefix = ''): Promise<v
         const fileFormat = file.replace('.ts', '')
         let route: string = path.join(prefix, fileFormat).split('\\').join('/')
 
+        route = route.replace(/\(.*?\)\//g, '')
         if (fileFormat === 'index') route = route.replace('index', '')
         if (fileFormat === 'find') route = route.replace('find', 'find/:id');
 
-
-        ['get', 'post', 'delete', 'put'].forEach(async (method: string) => {
+        ['get', 'post', 'delete', 'put', 'patch'].forEach(async (method: string) => {
           if (routeName?.[method] !== undefined) {
             const middleware = []
 
             if (!routeName.notRequiresAuth) middleware.push(Auth)
             if (routeName.requereLevel) middleware.push(await Permission(routeName.requereLevel))
+            if (routeName.validation) middleware.push(routeName.validation)
             if (!routeName.notRequiredCors) middleware.push(Cors)
 
             middleware.push(routeName[method])

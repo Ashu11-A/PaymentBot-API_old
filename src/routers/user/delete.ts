@@ -1,12 +1,12 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { prisma } from '../../services'
 
 export default new class updateUser {
 
-
-  public async post(req: Request, res: Response){
+  public async delete(req: Request, res: Response, next: NextFunction){
     try {
-      const { id } = req.body
+      const { id } = req.user
+      console.log(req.user)
       const user = await prisma.user.findUnique({ where: { id } })
 
       if (!user) throw new Error('❌ Usuário não encontrado.')
@@ -20,9 +20,7 @@ export default new class updateUser {
         })
       })
     }catch(err) {
-      return res.status(500).json({
-        message: err.message
-      })
+      next(err)
     }
   }
 }

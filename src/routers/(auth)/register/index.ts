@@ -1,26 +1,36 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import { prisma } from '../../services'
-import userValidator from '../../validations/user.validation'
+import { prisma } from '../../../services'
+import * as yup from 'yup'
 
 export default new class createUser {
   public notRequiresAuth = true
 
-  public async post(req: Request, res: Response){
+  public validation (req: Request, res: Response, next: NextFunction) {
     try {
-      await userValidator.register.validate(req.body)
-      const { name, email, password } = req.body
-
-      const userExist = await prisma.user.findUnique({ where: { email }})
-      const salt = await bcrypt.genSalt(10)
-      const passwordHash = await bcrypt.hash(password, salt)
-
-      if (userExist)  return res.status(409).json({
-        error: true,
-        message: 'Erro: Usuário já existe!'
+      const schema = yup.object({
+        name: yup.string().required(),
+        email: yup.string().required().email(),
+        password: yup.string().required().min(6)
       })
 
+      schema.validateSync(req.body)
+      next()
+    } catch (err) {
+      next(err)
+    }
+  }
+
+  public async post(req: Request, res: Response, next: NextFunction){
+    try {
+      const { name, email, password } = req.body
+      const userExist = await prisma.user.findUnique({ where: { email }})
+
+      if (userExist)  throw new Error('❌ Usuário já existe!')
+
+      const salt = await bcrypt.genSalt(10)
+      const passwordHash = await bcrypt.hash(password, salt)
       const permission = await prisma.permission.upsert({
         where: { name: 'user' },
         update: {},
@@ -41,16 +51,16 @@ export default new class createUser {
 
       const expiration = Math.floor(Date.now() / 1000) + 60 * 60
       const payload = {
-        userId: user.id,
-        userName: name,
-        userEmail: email,
+        id: user.id,
+        name,
+        email,
         expiration
       }
       const token = jwt.sign(payload, process.env.SECRET_KEY, { algorithm: 'HS256' })
 
       if (user) return res.status(200).json(token)
-    }catch(err) {
-      return res.status(400).json(err)
+    } catch(err) {
+      next(err)
     }
   }
 }

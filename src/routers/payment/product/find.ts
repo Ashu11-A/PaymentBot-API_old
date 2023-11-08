@@ -2,15 +2,11 @@ import { Request, Response } from 'express'
 import { prisma } from '../../../services'
 
 export default new class FindProduct {
-
-
-  public async get(req: Request, res: Response){
+  public async get(req: Request, res: Response) {
     const { id } = req.params
 
     const product = await prisma.product.findFirst({
-      where: {
-        id
-      },
+      where: { id },
       include: {
         ProductCategory: {
           include: {

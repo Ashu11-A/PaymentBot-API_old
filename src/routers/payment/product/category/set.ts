@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import { prisma } from '../../../../services'
 
 export default class CreateProductCategory {
-
+  public requereLevel = 5
 
   public async post (req: Request, res: Response){
     const { idProduct, idCategory } = req.body

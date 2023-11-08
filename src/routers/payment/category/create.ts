@@ -2,6 +2,8 @@ import { Request, Response } from 'express'
 import { prisma } from '../../../services'
 
 export default new class CreateCategory {
+  public requereLevel = 5
+
   public async post(req: Request, res: Response) {
     const { name } = req.body
 
