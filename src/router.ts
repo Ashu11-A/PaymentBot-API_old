@@ -2,7 +2,9 @@ import { Router } from 'express'
 import { readdirSync, statSync } from 'fs'
 import path from 'path'
 import notFoundRouter from './routers/home'
-import { Auth, Cors, Permission } from './middleware'
+import { Authenticator } from './middleware/Authenticator'
+import CheckPermission from './middleware/CheckPermission'
+import Cors from './middleware/Cors'
 
 const router = Router()
 
@@ -31,10 +33,10 @@ async function scan (folderPath: string, router: Router, prefix = ''): Promise<v
           if (routeName?.[method] !== undefined) {
             const middleware = []
 
-            if (!routeName.notRequiresAuth) middleware.push(Auth)
-            if (routeName.requereLevel) middleware.push(await Permission(routeName.requereLevel))
+            // if (!routeName.notRequiredCors) middleware.push(Cors())
+            if (!routeName.notRequiresAuth) middleware.push(await Authenticator())
+            if (routeName.requereLevel) middleware.push(await CheckPermission(routeName.requereLevel))
             if (routeName.validation) middleware.push(routeName.validation)
-            if (!routeName.notRequiredCors) middleware.push(Cors)
 
             middleware.push(routeName[method])
             router[method](`/${route}`, middleware)

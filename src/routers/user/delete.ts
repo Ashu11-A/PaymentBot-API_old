@@ -5,14 +5,13 @@ export default new class updateUser {
 
   public async delete(req: Request, res: Response, next: NextFunction){
     try {
-      const { id } = req.user
-      console.log(req.user)
-      const user = await prisma.user.findUnique({ where: { id } })
+      const { uuid } = req.accessToken
 
+      const user = await prisma.user.findUnique({ where: { uuid } })
       if (!user) throw new Error('❌ Usuário não encontrado.')
 
       await prisma.user.delete({
-        where: { id }
+        where: { uuid }
       }).then(() => {
         return res.status(200).json({
           error: false,

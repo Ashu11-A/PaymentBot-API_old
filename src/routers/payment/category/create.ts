@@ -1,18 +1,36 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { prisma } from '../../../services'
+import * as yup from 'yup'
 
 export default new class CreateCategory {
   public requereLevel = 5
 
-  public async post(req: Request, res: Response) {
-    const { name } = req.body
+  public validation (req: Request, res: Response, next: NextFunction) {
+    try {
+      const schema = yup.object({
+        name: yup.string().required(),
+      })
 
-    const category = await prisma.category.create({
-      data: {
-        name
-      }
-    })
+      schema.validateSync(req.body)
+      next()
+    } catch (err) {
+      next(err)
+    }
+  }
 
-    return res.status(200).json(category)
+  public async post(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { name } = req.body
+
+      const category = await prisma.category.create({
+        data: {
+          name
+        }
+      })
+
+      return res.status(201).json(category)
+    } catch (err) {
+      next(err)
+    }
   }
 }

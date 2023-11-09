@@ -1,6 +1,6 @@
 declare module 'express' {
     interface Request {
-        user?: jwt.JwtPayload
+        accessToken?: jwt.JwtPayload
     }
 }
 

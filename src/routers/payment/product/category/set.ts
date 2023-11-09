@@ -1,19 +1,38 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { prisma } from '../../../../services'
+import * as yup from 'yup'
 
 export default class CreateProductCategory {
   public requereLevel = 5
 
-  public async post (req: Request, res: Response){
-    const { idProduct, idCategory } = req.body
+  public validation (req: Request, res: Response, next: NextFunction) {
+    try {
+      const schema = yup.object({
+        idProduct: yup.string().required(),
+        idCategory: yup.string().required()
+      })
 
-    const productCategory = await prisma.productCategory.create({
-      data: {
-        idCategory,
-        idProduct
-      }
-    })
+      schema.validateSync(req.body)
+      next()
+    } catch (err) {
+      next(err)
+    }
+  }
 
-    return res.status(200).json(productCategory)
+  public async post (req: Request, res: Response, next: NextFunction){
+    try {
+      const { idProduct, idCategory } = req.body
+
+      const productCategory = await prisma.productCategory.create({
+        data: {
+          idCategory,
+          idProduct
+        }
+      })
+
+      return res.status(201).json(productCategory)
+    } catch (err) {
+      next(err)
+    }
   }
 }

@@ -8,14 +8,14 @@ export default new class updateUser {
   public validation (req: Request, res: Response, next: NextFunction) {
     try {
       const schemaUser = yup.object({
-        id: yup.number().required(),
+        uuid: yup.string().required(),
       })
       const schemaBody = yup.object({
-        name: yup.string().required(),
-        password: yup.string().required().min(6)
+        name: yup.string().min(4),
+        password: yup.string().min(6)
       })
 
-      schemaUser.validateSync(req.user)
+      schemaUser.validateSync(req.accessToken)
       schemaBody.validateSync(req.body)
       next()
     } catch (err) {
@@ -25,25 +25,31 @@ export default new class updateUser {
 
   public async patch(req: Request, res: Response, next: NextFunction){
     try {
-      const { id } = req.user
+      const { uuid } = req.accessToken
       const { name, password } = req.body
-      const confirmData = await prisma.user.findUnique({ where: { id } })
 
-      if (!confirmData) throw new Error('❌ Informações invalidas!')
-      const salt = await bcrypt.genSalt(10)
-      const passwordHash = await bcrypt.hash(password, salt)
+      const userData = await prisma.user.findUnique({ where: { uuid } })
+      if (!userData) throw new Error('❌ Informações invalidas!')
 
-      const user = await prisma.user.update({
-        where: { id },
-        data: { name, password: passwordHash }
-      })
+      if (password && !await bcrypt.compare(password, userData.password)) {
+        const salt = await bcrypt.genSalt(10)
+        const newPassword = await bcrypt.hash(password, salt)
 
-      if (user) {
-        return res.status(200).json({
-          error: false,
-          message: '✅ Usuário atualizado',
+        await prisma.user.update({
+          where: { uuid },
+          data: { password: newPassword }
         })
       }
+
+      await prisma.user.update({
+        where: { uuid },
+        data: { name }
+      })
+
+      return res.status(200).json({
+        error: false,
+        message: '✅ Usuário atualizado',
+      })
 
     }catch(err) {
       next(err)
